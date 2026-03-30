@@ -91,77 +91,83 @@
   <button id="saveCommentBtn" onclick="saveComment()">Save Comment</button>
 </div>
 
-  <script>
-    const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
+<script>
+  const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
 
-    async function loadCount() {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value,message`, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      });
-
-      const data = await response.json();
-      const row = data[0] ?? {};
-
-      document.getElementById("count").textContent = row.value ?? 0;
-      document.getElementById("savedComment").textContent = row.message ?? "";
-      document.getElementById("commentBox").value = row.message ?? "";
-    }
-
-    async function changeCount(amount) {
-      const current = Number(document.getElementById("count").textContent);
-      const newCount = Math.max(0, current + amount);
-
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Prefer: "return=representation"
-        },
-        body: JSON.stringify({ value: newCount })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Update failed:", errorText);
-        alert("Counter update failed. Check console.");
-        return;
+  async function loadCount() {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value,message`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
       }
+    });
 
-      document.getElementById("count").textContent = newCount;
+    const data = await response.json();
+    const row = data[0] ?? {};
+
+    document.getElementById("count").textContent = row.value ?? 0;
+    document.getElementById("savedComment").textContent = row.message ?? "";
+
+    const commentBox = document.getElementById("commentBox");
+    if (document.activeElement !== commentBox) {
+      commentBox.value = "";
+    }
+  }
+
+  async function changeCount(amount) {
+    const current = Number(document.getElementById("count").textContent);
+    const newCount = Math.max(0, current + amount);
+
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({ value: newCount })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Update failed:", errorText);
+      alert("Counter update failed. Check console.");
+      return;
     }
 
-    async function saveComment() {
-      const message = document.getElementById("commentBox").value.trim();
+    document.getElementById("count").textContent = newCount;
+  }
 
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Prefer: "return=representation"
-        },
-        body: JSON.stringify({ message: message })
-      });
+  async function saveComment() {
+    const commentBox = document.getElementById("commentBox");
+    const message = commentBox.value.trim();
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Comment update failed:", errorText);
-        alert("Comment update failed. Check console.");
-        return;
-      }
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({ message: message })
+    });
 
-      document.getElementById("savedComment").textContent = message;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Comment update failed:", errorText);
+      alert("Comment update failed. Check console.");
+      return;
     }
 
-    loadCount();
-    setInterval(loadCount, 3000);
-  </script>
+    document.getElementById("savedComment").textContent = message;
+    commentBox.value = "";
+  }
+
+  loadCount();
+  setInterval(loadCount, 3000);
+</script>
 </body>
 </html>
