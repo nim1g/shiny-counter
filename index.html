@@ -6,8 +6,6 @@
   <title>Shiny Counter</title>
   <style>
     body {
-      
-      
       font-family: Arial, sans-serif;
       text-align: center;
       color: white;
@@ -16,13 +14,16 @@
       background-repeat: repeat;
       background-size: auto;
     }
+
     h1 {
       font-size: 40px;
     }
+
     #count {
       font-size: 90px;
       margin: 30px 0;
     }
+
     button {
       font-size: 30px;
       padding: 15px 25px;
@@ -31,20 +32,64 @@
       border-radius: 10px;
       cursor: pointer;
     }
+
+    #quote {
+      font-size: 22px;
+      margin-top: 20px;
+    }
+
+    #commentSection {
+      margin-top: 35px;
+    }
+
+    #commentBox {
+      width: 80%;
+      max-width: 500px;
+      height: 100px;
+      font-size: 20px;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      resize: none;
+    }
+
+    #saveCommentBtn {
+      display: block;
+      margin: 15px auto 0;
+      font-size: 22px;
+    }
+
+    #savedComment {
+      margin-top: 20px;
+      font-size: 22px;
+      font-style: italic;
+      color: #fff;
+      text-shadow: 1px 1px 4px black;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
   <h1>Shiny Hunt Counter</h1>
   <div id="count">0</div>
+
   <button onclick="changeCount(-1)">-1</button>
   <button onclick="changeCount(1)">+1</button>
+
   <p id="quote">“are you sure this isnt shiny locked...”</p>
+
+  <div id="commentSection">
+    <textarea id="commentBox" placeholder="Leave an inspirational comment..."></textarea>
+    <button id="saveCommentBtn" onclick="saveComment()">Save Comment</button>
+    <div id="savedComment"></div>
+  </div>
+
   <script>
     const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
     const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
 
     async function loadCount() {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value,message`, {
         headers: {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`
@@ -52,7 +97,11 @@
       });
 
       const data = await response.json();
-      document.getElementById("count").textContent = data[0]?.value ?? 0;
+      const row = data[0] ?? {};
+
+      document.getElementById("count").textContent = row.value ?? 0;
+      document.getElementById("savedComment").textContent = row.message ?? "";
+      document.getElementById("commentBox").value = row.message ?? "";
     }
 
     async function changeCount(amount) {
@@ -78,6 +127,30 @@
       }
 
       document.getElementById("count").textContent = newCount;
+    }
+
+    async function saveComment() {
+      const message = document.getElementById("commentBox").value.trim();
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ message: message })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Comment update failed:", errorText);
+        alert("Comment update failed. Check console.");
+        return;
+      }
+
+      document.getElementById("savedComment").textContent = message;
     }
 
     loadCount();
