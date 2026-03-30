@@ -17,11 +17,25 @@
 
     h1 {
       font-size: 40px;
+      text-shadow: 1px 1px 4px black;
     }
 
-    #count {
+    .counter-wrapper {
+      display: inline-block;
+      margin: 20px 30px;
+      vertical-align: top;
+    }
+
+    .counter-title {
+      font-size: 28px;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 4px black;
+    }
+
+    .count {
       font-size: 90px;
-      margin: 30px 0;
+      margin: 20px 0;
+      text-shadow: 1px 1px 4px black;
     }
 
     button {
@@ -33,6 +47,16 @@
       cursor: pointer;
     }
 
+    .mainBtn {
+      background-color: orange;
+      color: white;
+    }
+
+    .skyBtn {
+      background-color: dodgerblue;
+      color: white;
+    }
+
     #quote {
       font-size: 22px;
       margin-top: 20px;
@@ -41,12 +65,6 @@
 
     #commentSection {
       margin-top: 35px;
-    }
-
-    #commentTitle {
-      font-size: 24px;
-      margin-bottom: 10px;
-      text-shadow: 1px 1px 4px black;
     }
 
     #commentBox {
@@ -64,10 +82,12 @@
       display: block;
       margin: 15px auto 0;
       font-size: 22px;
+      background-color: white;
+      color: black;
     }
 
     #savedComment {
-      margin-top: 20px;
+      margin-bottom: 12px;
       font-size: 22px;
       font-style: italic;
       color: #fff;
@@ -78,96 +98,117 @@
 </head>
 <body>
   <h1>Shiny Hunt Counter</h1>
-  <div id="count">0</div>
 
-  <button onclick="changeCount(-1)">-1</button>
-  <button onclick="changeCount(1)">+1</button>
+  <div class="counter-wrapper">
+    <div class="counter-title">Main Counter</div>
+    <div id="count" class="count">0</div>
+    <button class="mainBtn" onclick="changeCount('value', -1)">-1</button>
+    <button class="mainBtn" onclick="changeCount('value', 1)">+1</button>
+  </div>
+
+  <div class="counter-wrapper">
+    <div class="counter-title">Sky Counter</div>
+    <div id="skyCount" class="count">0</div>
+    <button class="skyBtn" onclick="changeCount('sky_value', -1)">-1</button>
+    <button class="skyBtn" onclick="changeCount('sky_value', 1)">+1</button>
+  </div>
 
   <p id="quote">“are you sure this isnt shiny locked...”</p>
 
-<div id="commentSection">
-  <div id="savedComment"></div>
-  <textarea id="commentBox" placeholder="leave an inspirational comment..."></textarea>
-  <button id="saveCommentBtn" onclick="saveComment()">Save Comment</button>
-</div>
+  <div id="commentSection">
+    <div id="savedComment"></div>
+    <textarea id="commentBox" placeholder="leave an inspirational comment..."></textarea>
+    <button id="saveCommentBtn" onclick="saveComment()">Save Comment</button>
+  </div>
 
-<script>
-  const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
+  <script>
+    const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
 
-  async function loadCount() {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value,message`, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
+    async function loadCount() {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value,sky_value,message`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      if (!response.ok) {
+        console.error("Load failed:", await response.text());
+        return;
+      }
+
+      const data = await response.json();
+      const row = data[0] || {};
+
+      document.getElementById("count").textContent = row.value ?? 0;
+      document.getElementById("skyCount").textContent = row.sky_value ?? 0;
+      document.getElementById("savedComment").textContent = row.message ?? "";
+    }
+
+    async function changeCount(column, amount) {
+      const elementId = column === "value" ? "count" : "skyCount";
+      const current = Number(document.getElementById(elementId).textContent);
+      const newCount = Math.max(0, current + amount);
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ [column]: newCount })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Update failed:", errorText);
+        alert("Counter update failed.");
+        return;
+      }
+
+      document.getElementById(elementId).textContent = newCount;
+    }
+
+    async function saveComment() {
+      const commentBox = document.getElementById("commentBox");
+      const message = commentBox.value.trim();
+
+      if (!message) return;
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ message: message })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Comment update failed:", errorText);
+        alert("Comment update failed.");
+        return;
+      }
+
+      document.getElementById("savedComment").textContent = message;
+      commentBox.value = "";
+    }
+
+    document.getElementById("commentBox").addEventListener("keydown", function(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        saveComment();
       }
     });
 
-    const data = await response.json();
-    const row = data[0] ?? {};
-
-    document.getElementById("count").textContent = row.value ?? 0;
-    document.getElementById("savedComment").textContent = row.message ?? "";
-
-    const commentBox = document.getElementById("commentBox");
-    if (document.activeElement !== commentBox) {
-      commentBox.value = "";
-    }
-  }
-
-  async function changeCount(amount) {
-    const current = Number(document.getElementById("count").textContent);
-    const newCount = Math.max(0, current + amount);
-
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        Prefer: "return=representation"
-      },
-      body: JSON.stringify({ value: newCount })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Update failed:", errorText);
-      alert("Counter update failed. Check console.");
-      return;
-    }
-
-    document.getElementById("count").textContent = newCount;
-  }
-
-  async function saveComment() {
-    const commentBox = document.getElementById("commentBox");
-    const message = commentBox.value.trim();
-
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        Prefer: "return=representation"
-      },
-      body: JSON.stringify({ message: message })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Comment update failed:", errorText);
-      alert("Comment update failed. Check console.");
-      return;
-    }
-
-    document.getElementById("savedComment").textContent = message;
-    commentBox.value = "";
-  }
-
-  loadCount();
-  setInterval(loadCount, 3000);
-</script>
+    loadCount();
+    setInterval(loadCount, 3000);
+  </script>
 </body>
 </html>
