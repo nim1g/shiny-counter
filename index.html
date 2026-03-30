@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shiny Counter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #111;
+      color: white;
+      padding-top: 60px;
+    }
+    h1 {
+      font-size: 40px;
+    }
+    #count {
+      font-size: 90px;
+      margin: 30px 0;
+    }
+    button {
+      font-size: 30px;
+      padding: 15px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shiny Hunt Counter</h1>
+  <div id="count">0</div>
+  <button onclick="changeCount(1)">+1</button>
+  <button onclick="changeCount(-1)">-1</button>
+
+  <script>
+    const SUPABASE_URL = "https://ihiuepjufatnqxjgwqeh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_dh7_YNwnxMIa4jdVcBNRjg_ijrEsobr";
+
+    async function loadCount() {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1&select=value`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      const data = await response.json();
+      document.getElementById("count").textContent = data[0]?.value ?? 0;
+    }
+
+    async function changeCount(amount) {
+      const current = Number(document.getElementById("count").textContent);
+      const newCount = Math.max(0, current + amount);
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/counter?id=eq.1`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ value: newCount })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Update failed:", errorText);
+        alert("Counter update failed. Check console.");
+        return;
+      }
+
+      document.getElementById("count").textContent = newCount;
+    }
+
+    loadCount();
+    setInterval(loadCount, 3000);
+  </script>
+</body>
+</html>
