@@ -36,10 +36,17 @@
     #quote {
       font-size: 22px;
       margin-top: 20px;
+      text-shadow: 1px 1px 4px black;
     }
 
     #commentSection {
       margin-top: 35px;
+    }
+
+    #commentTitle {
+      font-size: 24px;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 4px black;
     }
 
     #commentBox {
@@ -79,7 +86,8 @@
   <p id="quote">“are you sure this isnt shiny locked...”</p>
 
   <div id="commentSection">
-    <textarea id="commentBox" placeholder="Leave an inspirational comment..."></textarea>
+    <p id="commentTitle">Inspirational message:</p>
+    <textarea id="commentBox" placeholder="leave an inspirational comment..."></textarea>
     <button id="saveCommentBtn" onclick="saveComment()">Save Comment</button>
     <div id="savedComment"></div>
   </div>
